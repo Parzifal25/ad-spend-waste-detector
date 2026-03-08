@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Ad Spend Waste Detector</title>
+</head>
+
+<body>
+
+<h2>Ad Spend Waste Detector</h2>
+
+<form method="post" enctype="multipart/form-data">
+Upload Ads CSV:
+<input type="file" name="file" required>
+<button type="submit">Analyze</button>
+</form>
+
+{% if summary %}
+
+<h3>Account Overview</h3>
+
+<p>Total Spend: ₹{{ "{:,.0f}".format(summary.total_spend) }}</p>
+
+<p>Estimated Wasted Spend: ₹{{ "{:,.0f}".format(summary.wasted_spend) }}</p>
+
+<p>Waste Percentage: {{ summary.waste_percent }}%</p>
+
+<p>Waste Score: {{ summary.waste_score }}/100</p>
+
+<p>Status: {{ summary.status }}</p>
+
+<h3>Top Waste Campaigns</h3>
+
+<ul>
+{% for item in summary.campaign_waste %}
+<li>{{ item.campaign }} → ₹{{ "{:,.0f}".format(item.waste) }}</li>
+{% endfor %}
+</ul>
+
+<h3>Detected Issues</h3>
+
+<ul>
+{% for issue in summary.issues %}
+<li>{{ issue }}</li>
+{% endfor %}
+</ul>
+
+{% endif %}
+
+{% if report %}
+
+<h3>AI Optimization Report</h3>
+<pre>{{ report }}</pre>
+
+{% endif %}
+
+</body>
+
+</html>
