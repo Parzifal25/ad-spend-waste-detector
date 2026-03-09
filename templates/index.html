@@ -1,59 +1,732 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-<title>Ad Spend Waste Detector</title>
-</head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AdWaste — Ad Spend Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════ */
+:root {
+  --bg:         #08080d;
+  --s1:         #0e0e16;
+  --s2:         #13131d;
+  --s3:         #1a1a26;
+  --bd:         #1e1e2c;
+  --bd2:        #2a2a3d;
+  --red:        #ff3535;
+  --red-d:      rgba(255,53,53,.11);
+  --orange:     #ff8c3a;
+  --orange-d:   rgba(255,140,58,.10);
+  --green:      #00dfa2;
+  --green-d:    rgba(0,223,162,.09);
+  --blue:       #4f8eff;
+  --blue-d:     rgba(79,142,255,.10);
+  --yellow:     #ffd166;
+  --txt:        #e4e4f0;
+  --muted:      #5e5e78;
+  --dim:        #30303f;
+  --mono:       'Space Mono', monospace;
+  --sans:       'Syne', sans-serif;
+  --r:          10px;
+}
 
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* subtle grid background */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,53,53,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,53,53,.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* ═══════════════════════════════════════
+   TOPBAR
+═══════════════════════════════════════ */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center;
+  height: 56px;
+  background: rgba(8,8,13,.88);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--bd);
+  padding: 0 32px;
+  gap: 14px;
+}
+.t-logo {
+  display: flex; align-items: center; gap: 9px;
+  text-decoration: none; flex-shrink: 0;
+}
+.t-hex {
+  width: 30px; height: 30px; flex-shrink: 0;
+  background: var(--red);
+  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display: grid; place-items: center;
+  font-size: 11px; color: #fff;
+}
+.t-wordmark {
+  font-family: var(--mono); font-size: 13px; font-weight: 700;
+  letter-spacing: .06em; color: var(--txt);
+}
+.t-wordmark em { color: var(--red); font-style: normal; }
+.t-pill {
+  font-family: var(--mono); font-size: 8px; font-weight: 700;
+  letter-spacing: .14em; background: var(--red);
+  color: #fff; padding: 2px 7px; border-radius: 2px;
+}
+.t-sep { flex: 1; }
+.t-live {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+  border: 1px solid var(--bd); border-radius: 5px; padding: 5px 12px;
+}
+.blink {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 7px var(--green);
+  animation: blink 2s ease infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+.t-cta {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--sans); font-size: 12px; font-weight: 700;
+  background: var(--red); color: #fff;
+  border: none; border-radius: 6px;
+  padding: 8px 16px; cursor: pointer;
+  transition: background .15s, transform .15s, box-shadow .15s;
+  letter-spacing: .03em;
+}
+.t-cta:hover {
+  background: #ff5050;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255,53,53,.28);
+}
+
+/* ═══════════════════════════════════════
+   PAGE WRAPPER
+═══════════════════════════════════════ */
+.page { position: relative; z-index: 1; max-width: 1120px; margin: 0 auto; padding: 0 28px 80px; }
+
+/* ═══════════════════════════════════════
+   HERO
+═══════════════════════════════════════ */
+.hero {
+  text-align: center;
+  padding: 72px 20px 56px;
+  animation: up .5s ease both;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: .18em;
+  color: var(--muted); text-transform: uppercase;
+  border: 1px solid var(--bd); border-radius: 20px;
+  padding: 5px 14px; margin-bottom: 22px;
+}
+.hero-badge::before { content: '✦'; color: var(--red); }
+.hero h1 {
+  font-size: clamp(30px, 5.5vw, 56px);
+  font-weight: 800; line-height: 1.05;
+  letter-spacing: -.025em; margin-bottom: 16px;
+}
+.hero h1 .hi { color: var(--red); }
+.hero-sub {
+  font-size: 15px; color: var(--muted); max-width: 500px;
+  margin: 0 auto 40px; line-height: 1.65;
+}
+
+/* ─── UPLOAD CARD ─── */
+.upload-card {
+  max-width: 520px; margin: 0 auto;
+  background: var(--s1);
+  border: 1px solid var(--bd);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 0 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,53,53,.05);
+}
+.uc-top { padding: 26px 26px 0; }
+.drop-zone {
+  border: 1.5px dashed var(--bd2);
+  border-radius: 9px;
+  padding: 26px 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  position: relative;
+  margin-bottom: 16px;
+}
+.drop-zone:hover, .drop-zone.dragging {
+  border-color: var(--red);
+  background: var(--red-d);
+}
+.dz-icon { font-size: 26px; margin-bottom: 7px; opacity: .45; }
+.dz-primary { font-size: 13px; color: var(--txt); margin-bottom: 4px; }
+.dz-primary strong { color: var(--red); }
+.dz-secondary { font-family: var(--mono); font-size: 9px; color: var(--dim); letter-spacing: .12em; }
+.dz-filename { font-family: var(--mono); font-size: 10px; color: var(--green); margin-top: 9px; min-height: 15px; }
+#csv-file { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.uc-bottom { padding: 0 26px 26px; }
+.run-btn {
+  width: 100%; padding: 13px;
+  background: var(--red); color: #fff; border: none; border-radius: 8px;
+  font-family: var(--sans); font-size: 13px; font-weight: 700;
+  letter-spacing: .04em; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background .15s, transform .15s, box-shadow .15s;
+}
+.run-btn:hover {
+  background: #ff5050;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(255,53,53,.3);
+}
+.uc-hint {
+  font-family: var(--mono); font-size: 9px; color: var(--dim);
+  text-align: center; margin-top: 10px; letter-spacing: .06em;
+}
+.uc-hint b { color: var(--muted); }
+
+.format-chip {
+  display: flex; align-items: flex-start; gap: 10px;
+  max-width: 520px; margin: 14px auto 0;
+  background: var(--s2); border: 1px solid var(--bd);
+  border-radius: 8px; padding: 12px 16px;
+}
+.fc-icon { font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+.fc-text { font-family: var(--mono); font-size: 9px; color: var(--muted); line-height: 1.8; letter-spacing: .04em; }
+.fc-text strong { color: var(--txt); }
+
+/* ═══════════════════════════════════════
+   SECTION DIVIDER
+═══════════════════════════════════════ */
+.s-div {
+  display: flex; align-items: center; gap: 14px;
+  margin: 52px 0 28px;
+}
+.s-div::before, .s-div::after { content: ''; flex: 1; height: 1px; background: var(--bd); }
+.s-lbl {
+  font-family: var(--mono); font-size: 9px; letter-spacing: .2em;
+  color: var(--muted); text-transform: uppercase; white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════
+   STAT CARDS
+═══════════════════════════════════════ */
+.stat-grid {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 14px; margin-bottom: 14px;
+}
+@media(max-width:720px){ .stat-grid{ grid-template-columns:1fr 1fr; } }
+@media(max-width:400px){ .stat-grid{ grid-template-columns:1fr; } }
+
+.stat {
+  background: var(--s1); border: 1px solid var(--bd);
+  border-radius: var(--r); padding: 20px 18px 18px;
+  position: relative; overflow: hidden;
+  transition: border-color .2s, transform .2s;
+  animation: up .4s ease both;
+}
+.stat:hover { border-color: var(--bd2); transform: translateY(-2px); }
+.stat::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 2px; border-radius: 2px;
+}
+.stat.s-blue::before   { background: var(--blue); }
+.stat.s-red::before    { background: var(--red); }
+.stat.s-orange::before { background: var(--orange); }
+.stat.s-green::before  { background: var(--green); }
+
+.stat-bg {
+  position: absolute; right: 16px; top: 14px;
+  font-size: 26px; opacity: .07; pointer-events: none; user-select: none;
+}
+.stat-lbl {
+  font-family: var(--mono); font-size: 8px; letter-spacing: .2em;
+  color: var(--muted); text-transform: uppercase; margin-bottom: 12px;
+}
+.stat-val {
+  font-family: var(--mono); font-size: 28px; font-weight: 700;
+  line-height: 1; margin-bottom: 8px;
+}
+.stat-val.blue   { color: var(--blue); }
+.stat-val.red    { color: var(--red); }
+.stat-val.orange { color: var(--orange); }
+.stat-val.green  { color: var(--green); }
+.stat-foot { font-size: 11px; color: var(--muted); }
+
+.s-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 8px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 3px; margin-top: 4px;
+}
+.s-pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.good     { background: var(--green-d);  color: var(--green); }
+.needs    { background: var(--orange-d); color: var(--orange); }
+.critical { background: var(--red-d);    color: var(--red); }
+
+/* ═══════════════════════════════════════
+   PANEL
+═══════════════════════════════════════ */
+.panel {
+  background: var(--s1); border: 1px solid var(--bd);
+  border-radius: var(--r); overflow: hidden;
+}
+.p-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 18px; border-bottom: 1px solid var(--bd);
+}
+.p-head-icon { font-size: 12px; }
+.p-title { font-size: 12px; font-weight: 700; }
+.p-pill {
+  margin-left: auto; font-family: var(--mono); font-size: 8px;
+  font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 3px;
+}
+.pp-red    { background: var(--red-d);    color: var(--red); }
+.pp-green  { background: var(--green-d);  color: var(--green); }
+.pp-orange { background: var(--orange-d); color: var(--orange); }
+.pp-blue   { background: var(--blue-d);   color: var(--blue); }
+.p-body { padding: 20px; }
+
+/* ═══════════════════════════════════════
+   TWO COL
+═══════════════════════════════════════ */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+@media(max-width:640px){ .two-col{ grid-template-columns:1fr; } }
+
+/* ═══════════════════════════════════════
+   CAMPAIGN BARS
+═══════════════════════════════════════ */
+.cw-list { display: flex; flex-direction: column; gap: 18px; }
+.cw-top {
+  display: flex; justify-content: space-between;
+  align-items: baseline; margin-bottom: 6px; gap: 10px;
+}
+.cw-name { font-size: 12px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cw-amt  { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--red); flex-shrink: 0; }
+.cw-track { height: 5px; background: var(--bd); border-radius: 3px; overflow: hidden; }
+.cw-fill  { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+.cw-meta  { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 4px; }
+
+/* ═══════════════════════════════════════
+   SCORE RING
+═══════════════════════════════════════ */
+.ring-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 4px 0 0;
+}
+.ring-svg-wrap { position: relative; width: 130px; height: 130px; }
+.ring-svg-wrap svg { transform: rotate(-90deg); display: block; }
+.ring-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.ring-num { font-family: var(--mono); font-size: 28px; font-weight: 700; line-height: 1; }
+.ring-den { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.ring-rows { width: 100%; margin-top: 18px; }
+.ring-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--bd); font-size: 11px;
+}
+.ring-row:last-child { border-bottom: none; }
+.rr-lbl { color: var(--muted); }
+.rr-val { font-family: var(--mono); font-weight: 700; }
+
+/* ═══════════════════════════════════════
+   ISSUES
+═══════════════════════════════════════ */
+.issue-list { display: flex; flex-direction: column; gap: 8px; }
+.issue-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--s2); border: 1px solid var(--bd);
+  border-left: 3px solid var(--red);
+  border-radius: 6px; padding: 11px 13px;
+  font-size: 11px; line-height: 1.55; color: var(--txt);
+  animation: up .3s ease both;
+}
+.issue-dot { color: var(--red); flex-shrink: 0; margin-top: 1px; }
+
+/* ═══════════════════════════════════════
+   AI REPORT
+═══════════════════════════════════════ */
+.report-panel { background: var(--s1); border: 1px solid var(--bd); border-radius: var(--r); overflow: hidden; }
+.report-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 20px; border-bottom: 1px solid var(--bd);
+  background: linear-gradient(90deg, rgba(255,53,53,.07) 0%, transparent 55%);
+}
+.rh-gem {
+  margin-left: auto; font-family: var(--mono); font-size: 8px;
+  background: var(--blue-d); color: var(--blue);
+  padding: 3px 9px; border-radius: 3px; letter-spacing: .1em;
+}
+.report-body {
+  padding: 24px 26px;
+  font-family: var(--mono); font-size: 12px; line-height: 1.9;
+  color: var(--txt); white-space: pre-wrap;
+  max-height: 540px; overflow-y: auto;
+}
+.report-body::-webkit-scrollbar { width: 4px; }
+.report-body::-webkit-scrollbar-thumb { background: var(--bd2); border-radius: 2px; }
+
+/* ═══════════════════════════════════════
+   LOADING OVERLAY
+═══════════════════════════════════════ */
+.overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(8,8,13,.9); backdrop-filter: blur(6px);
+  flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+}
+.overlay.show { display: flex; }
+.spinner {
+  width: 46px; height: 46px;
+  border: 3px solid var(--bd2); border-top-color: var(--red);
+  border-radius: 50%; animation: spin .75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.ov-title { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .16em; }
+.ov-steps { display: flex; flex-direction: column; gap: 6px; }
+.ov-step {
+  font-family: var(--mono); font-size: 10px; color: var(--dim);
+  letter-spacing: .06em; display: flex; align-items: center; gap: 8px;
+}
+.ov-step::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--bd2); flex-shrink: 0; }
+.ov-step.done   { color: var(--green); }
+.ov-step.done::before   { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.ov-step.active { color: var(--orange); }
+.ov-step.active::before { background: var(--orange); animation: blink 1s ease infinite; }
+
+/* ═══════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════ */
+.footer {
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid var(--bd); margin-top: 64px; padding: 20px 0;
+  font-family: var(--mono); font-size: 9px; color: var(--dim); letter-spacing: .1em;
+}
+.footer span { color: var(--red); }
+
+/* ═══════════════════════════════════════
+   ANIMATION
+═══════════════════════════════════════ */
+@keyframes up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.a1 { animation-delay: .04s; }
+.a2 { animation-delay: .10s; }
+.a3 { animation-delay: .17s; }
+.a4 { animation-delay: .24s; }
+.a5 { animation-delay: .30s; }
+.a6 { animation-delay: .36s; }
+</style>
+</head>
 <body>
 
-<h2>Ad Spend Waste Detector</h2>
+<!-- LOADING OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="spinner"></div>
+  <div class="ov-title">RUNNING WASTE ANALYSIS</div>
+  <div class="ov-steps">
+    <div class="ov-step done">Parsing campaign data</div>
+    <div class="ov-step active">Detecting inefficiencies</div>
+    <div class="ov-step">Generating AI report</div>
+  </div>
+</div>
 
-<form method="post" enctype="multipart/form-data">
-Upload Ads CSV:
-<input type="file" name="file" required>
-<button type="submit">Analyze</button>
-</form>
+<!-- TOPBAR -->
+<nav class="topbar">
+  <a class="t-logo" href="/">
+    <div class="t-hex">⬡</div>
+    <div class="t-wordmark">Ad<em>Waste</em></div>
+    <div class="t-pill">BETA</div>
+  </a>
+  <div class="t-sep"></div>
+  <div class="t-live"><div class="blink"></div>Detector Active</div>
+  <button class="t-cta" onclick="document.querySelector('.hero').scrollIntoView({behavior:'smooth'})">⚡ Analyze CSV</button>
+</nav>
 
-{% if summary %}
+<!-- PAGE -->
+<div class="page">
 
-<h3>Account Overview</h3>
+  <!-- HERO + UPLOAD -->
+  <div class="hero">
+    <div class="hero-badge">AI-Powered · Real-Time Waste Detection</div>
+    <h1>Find Where Your<br/><span class="hi">Ad Budget Burns</span></h1>
+    <p class="hero-sub">Upload your Google Ads or Meta CSV export. Get an instant waste audit and AI-powered recovery plan in seconds.</p>
 
-<p>Total Spend: ₹{{ "{:,.0f}".format(summary.total_spend) }}</p>
+    <form method="POST" enctype="multipart/form-data" id="upload-form" onsubmit="handleSubmit()">
+      <div class="upload-card">
+        <div class="uc-top">
+          <div class="drop-zone" id="drop-zone">
+            <input type="file" name="file" id="csv-file" accept=".csv" required onchange="onFile(this)"/>
+            <div class="dz-icon">📂</div>
+            <div class="dz-primary">Drop your CSV or <strong>click to browse</strong></div>
+            <div class="dz-secondary">CSV ONLY · MAX 10 MB</div>
+            <div class="dz-filename" id="fname"></div>
+          </div>
+        </div>
+        <div class="uc-bottom">
+          <button type="submit" class="run-btn">⚡ &nbsp;Run Waste Detection</button>
+          <div class="uc-hint">Powered by Gemini AI · <b>~10 sec analysis</b></div>
+        </div>
+      </div>
+    </form>
 
-<p>Estimated Wasted Spend: ₹{{ "{:,.0f}".format(summary.wasted_spend) }}</p>
+    <div class="format-chip">
+      <div class="fc-icon">ℹ</div>
+      <div class="fc-text">
+        <strong>Required columns:</strong> Campaign · Spend · CTR · CPC · Conversions<br/>
+        Export from: Google Ads → Reports → Campaigns &nbsp;|&nbsp; Meta → Ads Manager → Export Table
+      </div>
+    </div>
+  </div>
 
-<p>Waste Percentage: {{ summary.waste_percent }}%</p>
+  <!-- ════════════════════════════════
+       RESULTS — only if summary exists
+  ════════════════════════════════ -->
+  {% if summary %}
 
-<p>Waste Score: {{ summary.waste_score }}/100</p>
+  <div class="s-div"><span class="s-lbl">Analysis Results</span></div>
 
-<p>Status: {{ summary.status }}</p>
+  <!-- STAT CARDS -->
+  <div class="stat-grid">
+    <div class="stat s-blue a1">
+      <div class="stat-bg">💼</div>
+      <div class="stat-lbl">Total Spend</div>
+      <div class="stat-val blue">₹{{ "{:,.0f}".format(summary.total_spend) }}</div>
+      <div class="stat-foot">Across all campaigns</div>
+    </div>
+    <div class="stat s-red a2">
+      <div class="stat-bg">🔥</div>
+      <div class="stat-lbl">Wasted Spend</div>
+      <div class="stat-val red">₹{{ "{:,.0f}".format(summary.wasted_spend) }}</div>
+      <div class="stat-foot">Estimated inefficient budget</div>
+    </div>
+    <div class="stat s-orange a3">
+      <div class="stat-bg">📉</div>
+      <div class="stat-lbl">Waste Rate</div>
+      <div class="stat-val orange">{{ summary.waste_percent }}%</div>
+      <div class="stat-foot">Of total spend wasted</div>
+    </div>
+    <div class="stat s-green a4">
+      <div class="stat-bg">⚡</div>
+      <div class="stat-lbl">Waste Score</div>
+      <div class="stat-val green">{{ summary.waste_score }}</div>
+      <div class="stat-foot">
+        {% if summary.status == "Good" %}
+          <span class="s-pill good">{{ summary.status }}</span>
+        {% elif summary.status == "Needs Optimization" %}
+          <span class="s-pill needs">{{ summary.status }}</span>
+        {% else %}
+          <span class="s-pill critical">{{ summary.status }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 
-<h3>Top Waste Campaigns</h3>
+  <!-- TWO COL: CAMPAIGNS + SCORE -->
+  <div class="two-col a5">
 
-<ul>
-{% for item in summary.campaign_waste %}
-<li>{{ item.campaign }} → ₹{{ "{:,.0f}".format(item.waste) }}</li>
-{% endfor %}
-</ul>
+    <!-- Campaign waste bars -->
+    <div class="panel">
+      <div class="p-head">
+        <span class="p-head-icon">📊</span>
+        <span class="p-title">Top Waste Campaigns</span>
+        <span class="p-pill pp-red">{{ summary.campaign_waste | length }} flagged</span>
+      </div>
+      <div class="p-body">
+        {% if summary.campaign_waste %}
+          <div class="cw-list">
+            {% set max_w = summary.campaign_waste[0].waste %}
+            {% for c in summary.campaign_waste %}
+            <div>
+              <div class="cw-top">
+                <span class="cw-name">{{ c.campaign }}</span>
+                <span class="cw-amt">₹{{ "{:,.0f}".format(c.waste) }}</span>
+              </div>
+              <div class="cw-track">
+                <div class="cw-fill"
+                  style="width:{{ [(c.waste / max_w * 100), 100] | min }}%;
+                    background:{% if loop.index == 1 %}var(--red){% elif loop.index == 2 %}var(--orange){% else %}var(--yellow){% endif %};">
+                </div>
+              </div>
+              <div class="cw-meta">
+                {{ "%.1f"|format(c.waste / summary.wasted_spend * 100 if summary.wasted_spend else 0) }}% of total waste
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div style="text-align:center;padding:24px;color:var(--muted);font-size:12px;">
+            ✓ &nbsp;No high-waste campaigns detected
+          </div>
+        {% endif %}
+      </div>
+    </div>
 
-<h3>Detected Issues</h3>
+    <!-- Efficiency ring -->
+    <div class="panel">
+      <div class="p-head">
+        <span class="p-head-icon">⊙</span>
+        <span class="p-title">Efficiency Score</span>
+        <span class="p-pill
+          {% if summary.waste_score >= 80 %}pp-green
+          {% elif summary.waste_score >= 60 %}pp-orange
+          {% else %}pp-red{% endif %}">
+          {{ summary.status }}
+        </span>
+      </div>
+      <div class="p-body">
+        <div class="ring-wrap">
+          {% set sc   = summary.waste_score %}
+          {% set circ = 263.9 %}
+          {% set off  = circ - (circ * sc / 100) %}
+          {% set col  = "var(--green)" if sc >= 80 else ("var(--orange)" if sc >= 60 else "var(--red)") %}
+          <div class="ring-svg-wrap">
+            <svg width="130" height="130" viewBox="0 0 130 130">
+              <circle cx="65" cy="65" r="42" fill="none" stroke="var(--bd)" stroke-width="9"/>
+              <circle cx="65" cy="65" r="42" fill="none"
+                stroke="{{ col }}" stroke-width="9"
+                stroke-dasharray="{{ circ }}"
+                stroke-dashoffset="{{ off }}"
+                stroke-linecap="round"
+                id="score-arc"/>
+            </svg>
+            <div class="ring-center">
+              <div class="ring-num" style="color:{{ col }}">{{ sc }}</div>
+              <div class="ring-den">/100</div>
+            </div>
+          </div>
+          <div class="ring-rows">
+            <div class="ring-row">
+              <span class="rr-lbl">Total Spend</span>
+              <span class="rr-val" style="color:var(--blue)">₹{{ "{:,.0f}".format(summary.total_spend) }}</span>
+            </div>
+            <div class="ring-row">
+              <span class="rr-lbl">Wasted</span>
+              <span class="rr-val" style="color:var(--red)">₹{{ "{:,.0f}".format(summary.wasted_spend) }}</span>
+            </div>
+            <div class="ring-row">
+              <span class="rr-lbl">Waste Rate</span>
+              <span class="rr-val" style="color:var(--orange)">{{ summary.waste_percent }}%</span>
+            </div>
+            <div class="ring-row">
+              <span class="rr-lbl">Issues Found</span>
+              <span class="rr-val" style="color:var(--red)">{{ summary.issues | length }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-<ul>
-{% for issue in summary.issues %}
-<li>{{ issue }}</li>
-{% endfor %}
-</ul>
+  </div>
 
-{% endif %}
+  <!-- ISSUES FULL WIDTH -->
+  {% if summary.issues %}
+  <div class="panel a6" style="margin-bottom:14px;">
+    <div class="p-head">
+      <span class="p-head-icon">⚠</span>
+      <span class="p-title">Detected Issues</span>
+      <span class="p-pill pp-red">{{ summary.issues | length }} issues</span>
+    </div>
+    <div class="p-body">
+      <div class="issue-list">
+        {% for issue in summary.issues %}
+        <div class="issue-item" style="animation-delay:{{ loop.index * 0.05 }}s">
+          <span class="issue-dot">▸</span>
+          <span>{{ issue }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
-{% if report %}
+  <!-- AI REPORT -->
+  {% if report %}
+  <div class="report-panel a6">
+    <div class="report-head">
+      <span style="font-size:15px;color:var(--red);">✦</span>
+      <span style="font-size:13px;font-weight:700;">AI Waste Analysis Report</span>
+      <span class="rh-gem">GEMINI AI</span>
+    </div>
+    <div class="report-body" id="report-body">{{ report }}</div>
+  </div>
+  {% endif %}
 
-<h3>AI Optimization Report</h3>
-<pre>{{ report }}</pre>
+  {% elif request.method == 'POST' %}
+  <div style="text-align:center;padding:60px 20px;color:var(--muted);">
+    <div style="font-size:36px;opacity:.2;margin-bottom:14px;">⚠</div>
+    <div style="font-size:13px;">Could not process the file. Check CSV format and try again.</div>
+  </div>
+  {% endif %}
 
-{% endif %}
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>ADWASTE DETECTOR · BETA</div>
+    <div>Built with <span>♥</span> · Powered by Gemini AI</div>
+  </div>
 
+</div>
+
+<script>
+/* FILE PICK */
+function onFile(input) {
+  document.getElementById('fname').textContent =
+    input.files.length ? '✓ ' + input.files[0].name : '';
+}
+
+/* SUBMIT → SHOW OVERLAY */
+function handleSubmit() {
+  if (document.getElementById('csv-file').files.length)
+    document.getElementById('overlay').classList.add('show');
+}
+
+/* DRAG & DROP */
+const dz = document.getElementById('drop-zone');
+const fi = document.getElementById('csv-file');
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('dragging'); });
+dz.addEventListener('dragleave', ()  => dz.classList.remove('dragging'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('dragging');
+  if (e.dataTransfer.files.length) { fi.files = e.dataTransfer.files; onFile(fi); }
+});
+
+/* SCORE RING ANIMATE IN */
+window.addEventListener('load', () => {
+  document.getElementById('overlay').classList.remove('show');
+  const arc = document.getElementById('score-arc');
+  if (arc) {
+    const target = arc.getAttribute('stroke-dashoffset');
+    arc.setAttribute('stroke-dashoffset', arc.getAttribute('stroke-dasharray'));
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      arc.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)';
+      arc.setAttribute('stroke-dashoffset', target);
+    }));
+  }
+});
+
+/* HIGHLIGHT ₹ and % IN AI REPORT */
+const rb = document.getElementById('report-body');
+if (rb) {
+  rb.innerHTML = rb.innerHTML
+    .replace(/₹[\d,]+(\.\d+)?/g,  '<strong style="color:var(--green)">$&</strong>')
+    .replace(/\d+(\.\d+)?%/g,     '<strong style="color:var(--orange)">$&</strong>')
+    .replace(/\*\*(.+?)\*\*/g,    '<strong style="color:var(--txt)">$1</strong>');
+}
+</script>
 </body>
-
 </html>
