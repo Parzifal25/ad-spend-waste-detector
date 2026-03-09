@@ -4,39 +4,67 @@ import os
 from analyzer import analyze_ads
 from ai_report import generate_report
 
+
 app = Flask(__name__)
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
-@app.route("/", methods=["GET","POST"])
+@app.route("/", methods=["GET", "POST"])
 def index():
 
     summary = None
     report = None
 
+    print("REQUEST METHOD:", request.method)
+
     if request.method == "POST":
 
-        file = request.files["file"]
+        file = request.files.get("file")
 
-        if file:
+        if not file:
+            print("No file received")
+            return render_template(
+                "index.html",
+                summary=None,
+                report="No file uploaded.",
+                request=request
+            )
 
-            path = os.path.join(UPLOAD_FOLDER, file.filename)
-            file.save(path)
+        print("Uploaded file:", file.filename)
 
-            summary = analyze_ads(path)
+        # Save file
+        filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(filepath)
 
-            try:
-                report = generate_report(summary)
-            except Exception as e:
-                report = f"AI report generation failed: {str(e)}"
+        print("File saved to:", filepath)
+
+        try:
+
+            # Run analysis
+            summary = analyze_ads(filepath)
+
+            print("ANALYSIS RESULT:", summary)
+
+            # Generate AI report
+            report = generate_report(summary)
+
+            print("AI REPORT GENERATED")
+
+        except Exception as e:
+
+            print("ERROR:", str(e))
+
+            report = f"Processing failed: {str(e)}"
 
     return render_template(
         "index.html",
         summary=summary,
-        report=report
+        report=report,
+        request=request
     )
+
 
 if __name__ == "__main__":
     app.run(debug=True)
