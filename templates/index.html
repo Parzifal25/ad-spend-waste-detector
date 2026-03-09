@@ -431,6 +431,45 @@ body::before {
 .a4 { animation-delay: .24s; }
 .a5 { animation-delay: .30s; }
 .a6 { animation-delay: .36s; }
+
+/* ═══════════════════════════════════════
+   DOWNLOAD PDF BUTTON
+═══════════════════════════════════════ */
+.dl-btn {
+  width: 100%; padding: 14px;
+  background: transparent;
+  border: 1.5px solid var(--green);
+  border-radius: 8px;
+  color: var(--green);
+  font-family: var(--sans); font-size: 13px; font-weight: 700;
+  letter-spacing: .04em; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: background .15s, transform .15s, box-shadow .15s;
+  position: relative; overflow: hidden;
+}
+.dl-btn:hover {
+  background: var(--green-d);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(0,223,162,.18);
+}
+.dl-btn:active { transform: translateY(0); }
+.dl-icon {
+  font-size: 16px; font-weight: 900;
+  display: inline-block;
+  animation: bounce 1.6s ease infinite;
+}
+@keyframes bounce {
+  0%,100%{ transform:translateY(0); }
+  50%     { transform:translateY(3px); }
+}
+.dl-spinner {
+  display: none; width: 14px; height: 14px;
+  border: 2px solid rgba(0,223,162,.3); border-top-color: var(--green);
+  border-radius: 50%; animation: spin .7s linear infinite;
+}
+.dl-btn.loading .dl-icon  { display: none; }
+.dl-btn.loading .dl-label { opacity: .5; }
+.dl-btn.loading .dl-spinner { display: inline-block; }
 </style>
 </head>
 <body>
@@ -667,6 +706,18 @@ body::before {
   </div>
   {% endif %}
 
+  <!-- DOWNLOAD PDF BUTTON — always shown when summary exists -->
+  <div style="margin-top:16px;">
+    <button class="dl-btn"
+      id="dl-btn"
+      data-summary="{{ summary | tojson | e }}"
+      data-report="{{ report | e if report else '' }}">
+      <span class="dl-icon">⇓</span>
+      <span class="dl-label">Download PDF Report</span>
+      <span class="dl-spinner"></span>
+    </button>
+  </div>
+
   {% elif request.method == 'POST' %}
   <div style="text-align:center;padding:60px 20px;color:var(--muted);">
     <div style="font-size:36px;opacity:.2;margin-bottom:14px;">⚠</div>
@@ -726,6 +777,44 @@ if (rb) {
     .replace(/₹[\d,]+(\.\d+)?/g,  '<strong style="color:var(--green)">$&</strong>')
     .replace(/\d+(\.\d+)?%/g,     '<strong style="color:var(--orange)">$&</strong>')
     .replace(/\*\*(.+?)\*\*/g,    '<strong style="color:var(--txt)">$1</strong>');
+}
+
+/* DOWNLOAD PDF — reads data from data attributes, no Jinja in this block */
+function downloadPDF(btn) {
+  btn.classList.add('loading');
+
+  const rawSummary = btn.getAttribute('data-summary');
+  const rawReport  = btn.getAttribute('data-report') || '';
+
+  // data-summary is HTML-entity-encoded by Jinja's |e — decode it
+  const txt = document.createElement('textarea');
+  txt.innerHTML = rawSummary;
+  const summaryJson = txt.value;
+
+  const fd = new FormData();
+  fd.append('summary', summaryJson);
+  fd.append('report',  rawReport);
+
+  fetch('/download-report', {method: 'POST', body: fd})
+    .then(function(res) {
+      if (!res.ok) return res.text().then(function(t) { throw new Error(t); });
+      return res.blob();
+    })
+    .then(function(blob) {
+      const url = URL.createObjectURL(blob);
+      const a   = document.createElement('a');
+      a.href     = url;
+      a.download = 'adwaste_report.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      btn.classList.remove('loading');
+    })
+    .catch(function(err) {
+      btn.classList.remove('loading');
+      alert('PDF generation failed: ' + err.message);
+    });
 }
 </script>
 </body>
